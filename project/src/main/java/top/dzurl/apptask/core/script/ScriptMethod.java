@@ -1,13 +1,19 @@
 package top.dzurl.apptask.core.script;
 
+import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.html5.Location;
 import org.springframework.beans.factory.annotation.Autowired;
+import top.dzurl.apptask.core.conf.AppTaskConf;
 import top.dzurl.apptask.core.helper.MapHelper;
+import top.dzurl.apptask.core.model.ScriptRuntime;
+import top.dzurl.apptask.core.type.DeviceType;
 import top.dzurl.apptask.core.type.PlatformType;
+import top.dzurl.apptask.core.util.LeiDianSimulatorUtil;
 
 import java.util.HashMap;
 import java.util.Optional;
 
+@Slf4j
 public abstract class ScriptMethod {
 
     @Autowired
@@ -81,6 +87,8 @@ public abstract class ScriptMethod {
      */
     public static class AndroidScriptMethod extends ScriptMethod {
 
+        @Autowired
+        private AppTaskConf appTaskConf;
 
         @Override
         public void closeApp(String bundleId) {
@@ -103,6 +111,7 @@ public abstract class ScriptMethod {
         @Override
         public boolean setLocation(String address) {
             MapHelper.Location location = this.mapHelper.query(address);
+            log.info("{} -> {}", address, location);
             if (location == null) {
                 return false;
             }
@@ -111,7 +120,16 @@ public abstract class ScriptMethod {
 
         @Override
         public boolean setLocation(String lng, String lat) {
-            script.getRuntime().getDriver().setLocation(new Location(Double.valueOf(lat), Double.valueOf(lng), 0));
+            //运行环境
+            final ScriptRuntime runtime = script.getRuntime();
+
+            //如果是是模拟器则用模拟器内置方法进行定位
+            if (runtime.getEnvironment().getDevice().getType() == DeviceType.AndroidSimulator) {
+                LeiDianSimulatorUtil.locate(appTaskConf.getRunTime().getSimulator().getHome(), runtime.getSimulatorName(), lng, lat);
+            } else {
+                //真机用 Driver
+                runtime.getDriver().setLocation(new Location(Double.valueOf(lat), Double.valueOf(lng), 0));
+            }
             return true;
         }
 

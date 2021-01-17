@@ -2,7 +2,9 @@ package top.dzurl.apptask.core.util;
 
 import lombok.Cleanup;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
 import top.dzurl.apptask.core.runtime.model.AndroidSimulatorDevice;
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
 /**
  * 仅适合 4.0
  */
+@Slf4j
 public class LeiDianSimulatorUtil {
 
     private final static String fileFlag = "leidian";
@@ -52,6 +55,19 @@ public class LeiDianSimulatorUtil {
     public static void launch(File home, String name) {
         runCmd(home, "launch", "--name", name);
     }
+
+
+    /**
+     * 定位坐标
+     *
+     * @param home
+     * @param lng
+     * @param lat
+     */
+    public static void locate(File home, String name, String lng, String lat) {
+        runCmd(home, "locate", "--name", name, "--LLI", String.format("%s,%s", lng, lat));
+    }
+
 
     /**
      * 关闭虚拟机
@@ -324,9 +340,10 @@ public class LeiDianSimulatorUtil {
         List<String> cmdLines = new ArrayList() {{
             add("cmd");
             add("/c");
-            add(filePath);
+            add(FilenameUtils.normalize(filePath));
             addAll(List.of(cmds));
         }};
+        log.debug("cmd : {}", org.apache.commons.lang3.StringUtils.join(cmdLines.toArray(new String[0]), " "));
         Process p = Runtime.getRuntime().exec(cmdLines.toArray(new String[0]));
         @Cleanup InputStream inputStream = p.getInputStream();
         String ret = StreamUtils.copyToString(inputStream, Charset.forName("UTF-8"));
