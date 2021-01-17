@@ -1,0 +1,11 @@
+# IDE specific files
+/.idea/
+*.iml
+*.log
+*.gz
+
+
+
+#node js
+/node_modules/
+package-lock.json

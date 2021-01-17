@@ -1,0 +1,34 @@
+# IDE specific files
+/.idea/
+*.iml
+*.log
+*.gz
+
+# log
+/logs/
+
+# Compiler generated files
+target/
+
+
+# jrebel
+rebel.xml
+
+# 
+/simulator/
+
+
+# sdk
+/runtime/android-cmdline-tools
+/runtime/android-sdk
+/runtime/jdk
+/runtime/node
+/runtime/simulator
+
+
+# build
+/build/
+
+# 应用
+*.apk
+*.ipa

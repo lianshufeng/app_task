@@ -1,0 +1,17 @@
+server:
+  port: 8080
+
+app:
+  task:
+    maxRunTaskCount: 3
+    runTime:
+      home: ../runtime
+    androidSimulator:
+      #      leiDianHome: C:/LeiDian/LDPlayer4.0
+      leiDianHome: ../simulator
+  map:
+    ak: aa,bb,cc,dd #使用百度api http://lbs.baidu.com/apiconsole/key
+#需要启动的环境
+spring:
+  profiles:
+    active: dev
