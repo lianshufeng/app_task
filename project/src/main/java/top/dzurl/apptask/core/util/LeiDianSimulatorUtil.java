@@ -11,6 +11,7 @@ import top.dzurl.apptask.core.runtime.model.AndroidSimulatorDevice;
 
 import java.io.File;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -204,15 +205,19 @@ public class LeiDianSimulatorUtil {
      * @param name
      * @param device
      */
+    @SneakyThrows
     public static void modify(File home, String name, AndroidSimulatorDevice device) {
 
         //转换对象到map，且过滤空参数
         Map<String, Object> ret = new HashMap<>();
-        BeanUtil.toMap(device).entrySet().stream().filter((it) -> {
-            return (!it.getKey().equals("class")) && it.getValue() != null;
-        }).forEach((it) -> {
-            ret.put(it.getKey(), it.getValue());
-        });
+        for (Field field : AndroidSimulatorDevice.class.getDeclaredFields()) {
+            field.setAccessible(true);
+            Object val = field.get(device);
+            if (val != null) {
+                ret.put(field.getName(), val);
+            }
+        }
+
         if (ret.size() == 0) {
             return;
         }

@@ -391,17 +391,21 @@ public class ScriptHelper {
      * @return
      */
     private Environment mergeEnvironment(Environment target, Environment source) {
-        BeanUtils.copyProperties(source, target, new HashSet<>() {{
-            addAll(BeanUtil.getNullPropertyNames(source));
-            add("device");
-        }}.toArray(new String[0]));
-
-        //Device
-        Optional.ofNullable(source.getDevice()).ifPresent((it) -> {
-            BeanUtils.copyProperties(it, target.getDevice(), new HashSet<>() {{
+        Optional.ofNullable(source).ifPresent((it) -> {
+            BeanUtils.copyProperties(it, target, new HashSet<>() {{
                 addAll(BeanUtil.getNullPropertyNames(it));
+                add("device");
             }}.toArray(new String[0]));
+
+            //Device
+            Optional.ofNullable(it.getDevice()).ifPresent((device) -> {
+                BeanUtils.copyProperties(device, target.getDevice(), new HashSet<>() {{
+                    addAll(BeanUtil.getNullPropertyNames(device));
+                }}.toArray(new String[0]));
+            });
         });
+
+
         return target;
     }
 
