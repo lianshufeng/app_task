@@ -198,7 +198,15 @@ public class ScriptHelper {
         this.openAppOnRunTime(script);
 
         //执行脚本
-        Object ret = script.execute();
+        Object ret = null;
+        try {
+            ret = script.execute();
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error(e.getMessage());
+            publishEvent(script, ScriptEvent.EventType.Exception);
+        }
+
 
         //关闭运行环境
         this.closeRunTimeEnvironment(script);
@@ -317,14 +325,16 @@ public class ScriptHelper {
      * 发布事件
      */
     @SneakyThrows
-    private void publishEvent(SuperScript script, ScriptEvent.EventType eventType) {
+    private void publishEvent(SuperScript script, ScriptEvent.EventType eventType, Object... args) {
         ScriptEvent scriptEvent = script.event();
         if (scriptEvent != null) {
             try {
-                eventType.getMethod().invoke(scriptEvent, null);
+                eventType.getMethod().invoke(scriptEvent, args);
             } catch (Exception e) {
-                e.printStackTrace();
-                log.error(e.getMessage());
+                Optional.ofNullable(e.getMessage()).ifPresent((msg) -> {
+                    log.error(msg);
+                });
+                ScriptEvent.EventType.Exception.getMethod().invoke(scriptEvent, e);
             }
         }
     }

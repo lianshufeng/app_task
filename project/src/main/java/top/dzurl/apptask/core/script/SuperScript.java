@@ -87,14 +87,7 @@ public abstract class SuperScript extends Script {
      * @return
      */
     public final Object execute() {
-        Object ret = null;
-        try {
-            ret = this.run();
-        } catch (Exception e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
-        }
-        return ret;
+        return this.run();
     }
 
 

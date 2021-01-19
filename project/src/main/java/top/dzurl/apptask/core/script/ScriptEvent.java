@@ -34,13 +34,24 @@ public interface ScriptEvent {
 
 
     /**
+     * 异常
+     *
+     * @param e
+     */
+    void onException(Exception e);
+
+    /**
      * 事件对应的枚举类
      */
     public static enum EventType {
-        Create(getMethod("onCreate")),
-        InstallApp(getMethod("onInstallApp")),
-        RunApp(getMethod("onRunApp")),
-        Close(getMethod("onClose"));
+        Create(getMethod("onCreate", null)),
+        InstallApp(getMethod("onInstallApp", null)),
+        RunApp(getMethod("onRunApp", null)),
+        Close(getMethod("onClose", null)),
+        Exception(getMethod("onException", Exception.class)),
+
+
+        ;
 
         EventType(Method method) {
             this.method = method;
@@ -51,8 +62,8 @@ public interface ScriptEvent {
 
 
         @SneakyThrows
-        private static Method getMethod(String methodName) {
-            return ScriptEvent.class.getMethod(methodName, null);
+        private static Method getMethod(String methodName, Class<?>... parameterTypes) {
+            return ScriptEvent.class.getMethod(methodName, parameterTypes);
         }
 
     }
