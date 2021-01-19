@@ -19,6 +19,7 @@ import top.dzurl.apptask.core.util.BeanUtil;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -210,9 +211,7 @@ public class ScriptHelper {
      * 构建运行环境
      */
     private void createRunTimeEnvironment(SuperScript script) {
-        Optional.ofNullable(script.event()).ifPresent((it) -> {
-            it.onCreate();
-        });
+        publishEvent(script, ScriptEvent.EventType.Create);
 
         //取出运行环境
         final ScriptRuntime runtime = script.getRuntime();
@@ -233,9 +232,7 @@ public class ScriptHelper {
      * 关闭运行环境
      */
     private void closeRunTimeEnvironment(SuperScript script) {
-        Optional.ofNullable(script.event()).ifPresent((it) -> {
-            it.onClose();
-        });
+        publishEvent(script, ScriptEvent.EventType.Close);
 
         //取出运行环境
         final ScriptRuntime runtime = script.getRuntime();
@@ -268,9 +265,6 @@ public class ScriptHelper {
      * 在运行环境中安装并打开应用
      */
     private void openAppOnRunTime(SuperScript script) {
-        Optional.ofNullable(script.event()).ifPresent((it) -> {
-            it.onRunApp();
-        });
 
         //运行环境
         final ScriptRuntime runtime = script.getRuntime();
@@ -280,6 +274,12 @@ public class ScriptHelper {
         if (app == null) {
             return;
         }
+
+
+        //事件：安装
+        Optional.ofNullable(script.event()).ifPresent((it) -> {
+            publishEvent(script, ScriptEvent.EventType.InstallApp);
+        });
 
         //是否安装app,没有安装则安装
         Optional.ofNullable(app.getFileNames()).ifPresent((fileNames) -> {
@@ -298,6 +298,12 @@ public class ScriptHelper {
         });
 
 
+        //事件：app
+        Optional.ofNullable(script.event()).ifPresent((it) -> {
+            publishEvent(script, ScriptEvent.EventType.RunApp);
+        });
+
+
         //启动路径
         Optional.ofNullable(getLaunchBundle(runtime)).ifPresent((bundleId) -> {
             log.info("[app] - [activate] - {}", bundleId);
@@ -306,6 +312,24 @@ public class ScriptHelper {
 
 
     }
+
+    /**
+     * 发布事件
+     */
+    @SneakyThrows
+    private void publishEvent(SuperScript script, ScriptEvent.EventType eventType) {
+        ScriptEvent scriptEvent = script.event();
+        if (scriptEvent != null) {
+            try {
+                eventType.getMethod().invoke(scriptEvent, null);
+            } catch (java.lang.UnsupportedOperationException e) {
+                //方法未实现事件
+                log.error(e.getMessage());
+            }
+
+        }
+    }
+
 
     /**
      * 获取需要启动的app
