@@ -322,11 +322,10 @@ public class ScriptHelper {
         if (scriptEvent != null) {
             try {
                 eventType.getMethod().invoke(scriptEvent, null);
-            } catch (java.lang.UnsupportedOperationException e) {
-                //方法未实现事件
+            } catch (Exception e) {
+                e.printStackTrace();
                 log.error(e.getMessage());
             }
-
         }
     }
 
