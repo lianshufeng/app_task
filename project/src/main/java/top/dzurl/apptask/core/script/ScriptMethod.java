@@ -3,9 +3,11 @@ package top.dzurl.apptask.core.script;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.html5.Location;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.Assert;
 import top.dzurl.apptask.core.conf.AppTaskConf;
 import top.dzurl.apptask.core.helper.MapHelper;
 import top.dzurl.apptask.core.model.ScriptRuntime;
+import top.dzurl.apptask.core.runtime.model.Device;
 import top.dzurl.apptask.core.type.DeviceType;
 import top.dzurl.apptask.core.type.PlatformType;
 import top.dzurl.apptask.core.util.LeiDianSimulatorUtil;
@@ -61,9 +63,12 @@ public abstract class ScriptMethod {
      * @return
      */
     protected static void build(SuperScript script) {
+        //取出设备信息
+        Device device = script.getRuntime().getEnvironment().getDevice();
+        Assert.notNull(device, "设备类型不能为空");
 
         //取出脚本运行的平台
-        final PlatformType platformType = script.getRuntime().getEnvironment().getDevice().getType().getPlatform();
+        final PlatformType platformType = device.getType().getPlatform();
 
         ScriptMethod scriptMethod = null;
         if (platformType == PlatformType.Android) {

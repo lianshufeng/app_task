@@ -8,29 +8,34 @@ import java.lang.reflect.Method;
 /**
  * 脚本事件
  */
-public interface ScriptEvent {
+public abstract class ScriptEvent {
 
     /**
      * 创建环境
      */
-    void onCreate();
+    public void onCreate() {
+    }
 
 
     /**
      * 在安装app
      */
-    void onInstallApp();
+    public void onInstallApp() {
+    }
 
 
     /**
      * 运行应用
      */
-    void onRunApp();
+    public void onRunApp() {
+    }
+
 
     /**
      * 关闭环境
      */
-    void onClose();
+    public void onClose() {
+    }
 
 
     /**
@@ -38,7 +43,8 @@ public interface ScriptEvent {
      *
      * @param e
      */
-    void onException(Exception e);
+    public void onException(Exception e) {
+    }
 
     /**
      * 事件对应的枚举类

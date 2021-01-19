@@ -19,7 +19,6 @@ import top.dzurl.apptask.core.util.BeanUtil;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,6 +51,9 @@ public class ScriptHelper {
     @Autowired
     private AppTaskConf appTaskConf;
 
+    //需要检查的文件
+    private Vector<File> needCheckFile = new Vector();
+
 
     static {
         if (!scriptFile.exists()) {
@@ -71,6 +73,10 @@ public class ScriptHelper {
 
         //监视
         watchFolder();
+
+        //监视需要判断的脚本
+        watchScriptUpdate();
+
     }
 
 
@@ -99,13 +105,11 @@ public class ScriptHelper {
                     if (!"groovy".equals(FilenameUtils.getExtension(fileName))) {
                         continue;
                     }
-                    log.info("script update : {} -> {}", event.context(), event.kind());
+//                    log.info("script update : {} -> {}", event.context(), event.kind());
                     //脚本路径
                     final File file = new File(scriptFile.getAbsolutePath() + "/" + event.context());
-                    if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
-                        removeScript(file);
-                    } else if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE || event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
-                        updateScript(file);
+                    if (!needCheckFile.contains(file)) {
+                        needCheckFile.add(file);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -114,6 +118,28 @@ public class ScriptHelper {
             key.reset();
         }
     }
+
+
+    /**
+     * 监视脚本发生变更
+     */
+    private void watchScriptUpdate() {
+        new Timer().scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                if (needCheckFile.size() > 0) {
+                    File file = needCheckFile.remove(0);
+                    if (file.exists()) {
+                        removeScript(file);
+                        updateScript(file);
+                    } else {
+                        removeScript(file);
+                    }
+                }
+            }
+        }, 100, 100);
+    }
+
 
     /**
      * 更新脚本
@@ -131,6 +157,7 @@ public class ScriptHelper {
         if (!(script instanceof SuperScript)) {
             return;
         }
+
         SuperScript superScript = (SuperScript) script;
         //设置当前脚本的路径
         superScript.scriptFile = file;
@@ -142,6 +169,8 @@ public class ScriptHelper {
 
         //记录文件名与脚本名
         this.scriptNameCache.put(file.getName(), scriptName);
+
+        log.info("load script : {} ", file.getName());
     }
 
     /**
@@ -153,6 +182,7 @@ public class ScriptHelper {
         Optional.ofNullable(this.scriptNameCache.remove(file.getName())).ifPresent((scriptName) -> {
             //记录文件名与脚本名
             this.springBeanHelper.remove(getComponentName(scriptName));
+            log.info("remove script : {} ", file.getName());
         });
     }
 
@@ -334,7 +364,11 @@ public class ScriptHelper {
                 Optional.ofNullable(e.getMessage()).ifPresent((msg) -> {
                     log.error(msg);
                 });
-                ScriptEvent.EventType.Exception.getMethod().invoke(scriptEvent, e);
+                try {
+                    ScriptEvent.EventType.Exception.getMethod().invoke(scriptEvent, e);
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
             }
         }
     }
@@ -432,9 +466,14 @@ public class ScriptHelper {
 
             //Device
             Optional.ofNullable(it.getDevice()).ifPresent((device) -> {
-                BeanUtils.copyProperties(device, target.getDevice(), new HashSet<>() {{
-                    addAll(BeanUtil.getNullPropertyNames(device));
-                }}.toArray(new String[0]));
+                //设备类型不存在则完全使用用户传递的设备信息
+                if (target.getDevice() == null) {
+                    target.setDevice(device);
+                } else {
+                    BeanUtils.copyProperties(device, target.getDevice(), new HashSet<>() {{
+                        addAll(BeanUtil.getNullPropertyNames(device));
+                    }}.toArray(new String[0]));
+                }
             });
         });
 

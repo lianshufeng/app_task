@@ -2,6 +2,7 @@ package top.dzurl.apptask.core.type;
 
 import lombok.Getter;
 import top.dzurl.apptask.core.runtime.RunTimeEnvironmentManager;
+import top.dzurl.apptask.core.runtime.impl.AndroidMachineRunTimeManager;
 import top.dzurl.apptask.core.runtime.impl.AndroidSimulatorRunTimeManager;
 
 /**
@@ -10,7 +11,7 @@ import top.dzurl.apptask.core.runtime.impl.AndroidSimulatorRunTimeManager;
 public enum DeviceType {
     //Android 模拟器
     AndroidSimulator(PlatformType.Android, AndroidSimulatorRunTimeManager.class),
-    AndroidMachine(PlatformType.Android, null),
+    AndroidMachine(PlatformType.Android, AndroidMachineRunTimeManager.class),
 
 
     IosSimulator(PlatformType.Ios, null),
