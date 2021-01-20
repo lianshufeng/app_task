@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -48,7 +49,7 @@ public class AppTaskConf {
          * @return
          */
         public File getAppiumHome() {
-            return new File(home.getAbsolutePath() + "/appium");
+            return new File(FilenameUtils.normalize(home.getAbsolutePath() + "/appium"));
         }
 
         /**
@@ -57,7 +58,17 @@ public class AppTaskConf {
          * @return
          */
         public File getNodeHome() {
-            return new File(home.getAbsolutePath() + "/node");
+            return new File(FilenameUtils.normalize(home.getAbsolutePath() + "/node"));
+        }
+
+
+        /**
+         * 取出adb所在的路径
+         *
+         * @return
+         */
+        public File getADBHome() {
+            return new File(FilenameUtils.normalize(home.getAbsolutePath() + "/android-sdk/platform-tools"));
         }
 
 

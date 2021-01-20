@@ -1,13 +1,17 @@
-package top.dzurl.apptask.core.runtime.model;
+package top.dzurl.apptask.core.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import top.dzurl.apptask.core.type.DeviceType;
+import lombok.NoArgsConstructor;
 
 /**
- * 非模拟器仅支持部分修改
+ * android的基本信息
  */
+
 @Data
-public class AndroidMachineDevice extends Device {
+@AllArgsConstructor
+@NoArgsConstructor
+public class AndroidDeviceInfo {
 
     //系统版本
     private String version;
@@ -27,10 +31,4 @@ public class AndroidMachineDevice extends Device {
     //mac地址
     private String mac;
 
-    
-
-    @Override
-    public DeviceType getType() {
-        return DeviceType.AndroidMachine;
-    }
 }

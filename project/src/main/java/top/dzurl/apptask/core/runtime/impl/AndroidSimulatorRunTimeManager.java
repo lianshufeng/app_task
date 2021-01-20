@@ -17,8 +17,10 @@ import top.dzurl.apptask.core.appium.AppiumServer;
 import top.dzurl.apptask.core.conf.AppTaskConf;
 import top.dzurl.apptask.core.model.Environment;
 import top.dzurl.apptask.core.model.ScriptRuntime;
+import top.dzurl.apptask.core.model.runtime.AndroidSimulatorScriptRuntime;
 import top.dzurl.apptask.core.runtime.RunTimeEnvironmentManager;
 import top.dzurl.apptask.core.runtime.model.AndroidSimulatorDevice;
+import top.dzurl.apptask.core.util.ADBUtil;
 import top.dzurl.apptask.core.util.BeanUtil;
 import top.dzurl.apptask.core.util.LeiDianSimulatorUtil;
 
@@ -95,25 +97,25 @@ public class AndroidSimulatorRunTimeManager implements RunTimeEnvironmentManager
      * 重启adb服务
      */
     private void restartADB() {
-        LeiDianSimulatorUtil.restartADB(leiDianHome);
+        ADBUtil.restartADB(leiDianHome);
     }
 
 
     @Override
     public synchronized void open(ScriptRuntime runtime) {
+        final AndroidSimulatorScriptRuntime simulatorScriptRuntime = (AndroidSimulatorScriptRuntime) runtime;
 
-        Environment runtimeEnvironment = runtime.getEnvironment();
+        Environment runtimeEnvironment = simulatorScriptRuntime.getEnvironment();
 
         //查询内存中缓存的模拟器
         RunningSimulator simulator = findSimulatorFromCache(runtimeEnvironment);
         if (simulator == null) {
-            simulator = loadDiskSimulator(runtime);
+            simulator = loadDiskSimulator(simulatorScriptRuntime);
         }
 
-
         //设置运行环境的驱动与模拟器名称
-        runtime.setDriver(simulator.getDriver());
-        runtime.setSimulatorName(simulator.getSimulatorName());
+        simulatorScriptRuntime.setDriver(simulator.getDriver());
+        simulatorScriptRuntime.setSimulatorName(simulator.getSimulatorName());
 
 
     }
@@ -152,34 +154,9 @@ public class AndroidSimulatorRunTimeManager implements RunTimeEnvironmentManager
         //设置磁盘上数据
         runningSimulator.setInfo(LeiDianSimulatorUtil.get(leiDianHome, simulatorName));
 
-
         this.runningSimulators.add(runningSimulator);
 
         return runningSimulator;
-    }
-
-    /**
-     * 释放模拟器
-     */
-    private void canReleaseSimulator() {
-        //仅判断空闲的模拟器
-        if (this.runningSimulators.stream().filter((it) -> {
-            return !it.isWorking();
-        }).count() < this.appTaskConf.getRunTime().getSimulator().getMaxCacheCount()
-        ) {
-            return;
-        }
-
-        //排序并找到热度最小的模拟器
-        final RunningSimulator runningSimulator = this.runningSimulators.stream().sorted(Comparator.comparing(RunningSimulator::getLastAccessTime)).collect(Collectors.toList()).get(0);
-
-        //特殊情况：当前对象的虚拟机已关闭，但又被其他缓存到内存里
-//        boolean quitSimulator = this.runningSimulators.stream().filter((it) -> {
-//            return it.getSimulatorName().equals(runningSimulator.getSimulatorName());
-//        }).count() <= 1;
-
-        //释放模拟器
-        closeSimulator(runningSimulator, true, true, true);
     }
 
     /**
@@ -214,15 +191,17 @@ public class AndroidSimulatorRunTimeManager implements RunTimeEnvironmentManager
 
     @Override
     public void close(ScriptRuntime runtime) {
+        final AndroidSimulatorScriptRuntime simulatorScriptRuntime = (AndroidSimulatorScriptRuntime) runtime;
         //标记模拟器未工作
-        Optional.ofNullable(findRunningSimulatorByName(runtime.getSimulatorName())).ifPresent((it) -> {
+        Optional.ofNullable(findRunningSimulatorByName(simulatorScriptRuntime.getSimulatorName())).ifPresent((it) -> {
             it.setLastAccessTime(System.currentTimeMillis());
             it.setWorking(false);
         });
 
+
         //释放驱动
-        runtime.setDriver(null);
-        runtime.setSimulatorName(null);
+        simulatorScriptRuntime.setDriver(null);
+        simulatorScriptRuntime.setSimulatorName(null);
     }
 
 

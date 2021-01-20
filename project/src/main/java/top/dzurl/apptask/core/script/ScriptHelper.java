@@ -308,8 +308,13 @@ public class ScriptHelper {
         final ScriptRuntime runtime = script.getRuntime();
 
         //安装app
-        Environment.App app = script.getRuntime().getEnvironment().getApp();
+        Environment.App app = runtime.getEnvironment().getApp();
         if (app == null) {
+            return;
+        }
+
+        // 没有驱动则不执行
+        if (runtime.getDriver() == null) {
             return;
         }
 
@@ -396,8 +401,10 @@ public class ScriptHelper {
     /**
      * 构建运行环境
      */
+    @SneakyThrows
     private ScriptRuntime buildRunTime(Environment environment, Map<String, Object> parameters) {
-        ScriptRuntime scriptRuntime = new ScriptRuntime();
+        //构建脚本的运行环境
+        ScriptRuntime scriptRuntime = environment.getDevice().getType().getScriptRuntime().getConstructor().newInstance();
 
         scriptRuntime.setEnvironment(environment);
         scriptRuntime.setParameters(parameters);

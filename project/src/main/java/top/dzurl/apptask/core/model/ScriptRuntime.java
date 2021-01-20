@@ -25,10 +25,7 @@ public class ScriptRuntime {
     //驱动
     private AppiumDriver driver;
 
-    //模拟器名称
-    private String simulatorName;
-
-    //线程池
+    //线程池,由ScriptHelper维护
     protected ScheduledExecutorService threadPool;
 
 }

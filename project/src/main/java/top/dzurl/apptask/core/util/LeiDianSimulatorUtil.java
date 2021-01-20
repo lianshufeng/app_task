@@ -27,16 +27,6 @@ public class LeiDianSimulatorUtil {
 
 
     /**
-     * 重启adb
-     *
-     * @param home
-     */
-    public static void restartADB(File home) {
-        runAdb(home, "kill-server");
-        runAdb(home, "start-server");
-    }
-
-    /**
      * 关闭应用
      *
      * @param home
@@ -95,11 +85,7 @@ public class LeiDianSimulatorUtil {
         //重新adb的方法，避免缓存错误的设备名
 
         //取出所有的设备
-        List<String> devices = Arrays.stream(runAdb(home, "devices").split("\r\n")).map((it) -> {
-            return it.split("\t")[0];
-        }).collect(Collectors.toList());
-        //删除一个
-        devices.remove(0);
+        List<String> devices = new ArrayList<>(ADBUtil.list(home));
 
         //取出所有模拟器的信息
         Map<String, Object> deviceInfo = get(home, name);
@@ -111,7 +97,7 @@ public class LeiDianSimulatorUtil {
 
         for (String device : devices) {
             //取出当前运行设备的mac地址
-            String address = runAdb(home, "-s", device, "shell", "cat", "/sys/class/net/eth0/address");
+            String address = ADBUtil.getMac(home, device);
             if (!StringUtils.hasText(address)) {
                 continue;
             }
@@ -126,6 +112,7 @@ public class LeiDianSimulatorUtil {
 
         return null;
     }
+
 
     private static String getSerialno_bak(File home, String name) {
         //每次取设备号之前，先刷新adb状态
@@ -336,7 +323,7 @@ public class LeiDianSimulatorUtil {
 
     @SneakyThrows
     private static String runAdb(File home, String... cmds) {
-        return command(home, "adb.exe", cmds);
+        return ADBUtil.runAdb(home, cmds);
     }
 
     @SneakyThrows

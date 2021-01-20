@@ -7,8 +7,8 @@ import org.springframework.util.Assert;
 import top.dzurl.apptask.core.conf.AppTaskConf;
 import top.dzurl.apptask.core.helper.MapHelper;
 import top.dzurl.apptask.core.model.ScriptRuntime;
+import top.dzurl.apptask.core.model.runtime.AndroidSimulatorScriptRuntime;
 import top.dzurl.apptask.core.runtime.model.Device;
-import top.dzurl.apptask.core.type.DeviceType;
 import top.dzurl.apptask.core.type.PlatformType;
 import top.dzurl.apptask.core.util.LeiDianSimulatorUtil;
 
@@ -129,8 +129,10 @@ public abstract class ScriptMethod {
             final ScriptRuntime runtime = script.getRuntime();
 
             //如果是是模拟器则用模拟器内置方法进行定位
-            if (runtime.getEnvironment().getDevice().getType() == DeviceType.AndroidSimulator) {
-                LeiDianSimulatorUtil.locate(appTaskConf.getRunTime().getSimulator().getHome(), runtime.getSimulatorName(), lng, lat);
+            if (runtime instanceof AndroidSimulatorScriptRuntime) {
+                //取出模拟器名字
+                final String simulatorName = ((AndroidSimulatorScriptRuntime) runtime).getSimulatorName();
+                LeiDianSimulatorUtil.locate(appTaskConf.getRunTime().getSimulator().getHome(), simulatorName, lng, lat);
             } else {
                 //真机用 Driver
                 runtime.getDriver().setLocation(new Location(Double.valueOf(lat), Double.valueOf(lng), 0));

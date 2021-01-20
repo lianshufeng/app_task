@@ -30,6 +30,9 @@ class DingDingDaKa extends SuperScript {
     @Override
     Environment environment() {
         return [
+                'app'   : [
+                        'fileNames': ['dingding.apk']
+                ],
                 'device': [
 
                 ] as AndroidMachineDevice
