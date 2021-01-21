@@ -27,7 +27,7 @@ public class AndroidMachineDevice extends Device {
     //mac地址
     private String mac;
 
-    
+
 
     @Override
     public DeviceType getType() {

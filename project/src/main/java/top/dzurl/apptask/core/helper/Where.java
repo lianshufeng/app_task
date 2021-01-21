@@ -37,9 +37,19 @@ public class Where<T> {
     public Where<T> execute(long sleepTime, Condition<T> condition, Then<T> then) {
         Assert.state(!stop, "无法执行已终止的任务");
         threadPool.schedule(() -> {
+
+
             T ret = null;
             try {
                 ret = condition.match();
+            } catch (Exception e) {
+                ret = null;
+                e.printStackTrace();
+                log.error(e.getMessage());
+            }
+
+
+            try {
                 if (ret != null) {
                     then.run(ret);
                 }
@@ -48,6 +58,7 @@ public class Where<T> {
                 e.printStackTrace();
                 log.error(e.getMessage());
             }
+
 
             //循环判断
             if (ret == null || (this.cycle && !this.stop)) {
