@@ -9,5 +9,7 @@ import top.dzurl.apptask.core.model.ScriptRuntime;
 @Data
 public class AndroidMachineScriptRuntime extends ScriptRuntime {
 
+    //设备名
+    private String deviceName;
 
 }

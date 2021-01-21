@@ -137,13 +137,13 @@ public class AndroidSimulatorRunTimeManager implements RunTimeEnvironmentManager
 
         //构建appuim的服务端
         log.info("[启动] - Appium服务");
-        AppiumDriverLocalService appiumDriverLocalService = buildService();
+        AppiumDriverLocalService appiumDriverLocalService = this.appiumServer.buildService();
         runningSimulator.setAppiumDriverLocalService(appiumDriverLocalService);
 
 
         //构建客户端,并连接
         log.info("[连接] - {} -> {}", simulatorName, appiumDriverLocalService.getUrl().toString());
-        AndroidDriver driver = buildClient(appiumDriverLocalService, adbConnectionName);
+        AndroidDriver driver = this.appiumServer.buildAndroidDriver(appiumDriverLocalService, adbConnectionName);
         runningSimulator.setDriver(driver);
 
 
@@ -251,43 +251,6 @@ public class AndroidSimulatorRunTimeManager implements RunTimeEnvironmentManager
         }
 
         return simulatorName;
-    }
-
-
-    /**
-     * 构建服务端
-     *
-     * @return
-     */
-    private AppiumDriverLocalService buildService() {
-        //服务端
-        return appiumServer.buildService();
-    }
-
-
-    /**
-     * 创建客户端
-     */
-    private AndroidDriver buildClient(AppiumDriverLocalService appiumDriverLocalService, String adbConnectionName) {
-        DesiredCapabilities capabilities = new DesiredCapabilities();
-        capabilities.setCapability("udid", adbConnectionName);
-        capabilities.setCapability("platformName", "Android");
-        capabilities.setCapability("newCommandTimeout", 60 * 60 * 24);
-
-        //不允许脚本退出与关闭
-        AndroidDriver driver = new AndroidDriver(appiumDriverLocalService.getUrl(), capabilities) {
-            @Override
-            public void quit() {
-                log.info("不允许执行 : {}", "quit");
-            }
-
-            @Override
-            public void close() {
-                log.info("不允许执行 : {}", "close");
-            }
-        };
-        driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-        return driver;
     }
 
 
@@ -436,35 +399,25 @@ public class AndroidSimulatorRunTimeManager implements RunTimeEnvironmentManager
      */
     @SneakyThrows
     private boolean matchSimulator(AndroidSimulatorDevice device, Map<String, Object> simulatorMap) {
+
+        Map<String, String> matchWord = new HashMap<>() {{
+            put("imei", "propertySettings.phoneIMEI");
+            put("imsi", "propertySettings.phoneIMSI");
+            put("simserial", "propertySettings.phoneSimSerial");
+            put("androidid", "propertySettings.phoneAndroidId");
+            put("model", "propertySettings.phoneModel");
+            put("manufacturer", "propertySettings.phoneManufacturer");
+            put("mac", "propertySettings.macAddress");
+        }};
+
         Map<String, Object> deviceMap = BeanUtil.toMap(device);
-        if (!matchMap(deviceMap, "imei", simulatorMap, "propertySettings.phoneIMEI")) {
-            return false;
-        }
 
-        if (!matchMap(deviceMap, "imsi", simulatorMap, "propertySettings.phoneIMSI")) {
-            return false;
-        }
 
-        if (!matchMap(deviceMap, "simserial", simulatorMap, "propertySettings.phoneSimSerial")) {
-            return false;
+        for (Map.Entry<String, String> entry : matchWord.entrySet()) {
+            if (!matchMap(deviceMap, entry.getKey(), simulatorMap, entry.getValue())) {
+                return false;
+            }
         }
-
-        if (!matchMap(deviceMap, "androidid", simulatorMap, "propertySettings.phoneAndroidId")) {
-            return false;
-        }
-
-        if (!matchMap(deviceMap, "model", simulatorMap, "propertySettings.phoneModel")) {
-            return false;
-        }
-
-        if (!matchMap(deviceMap, "manufacturer", simulatorMap, "propertySettings.phoneManufacturer")) {
-            return false;
-        }
-
-        if (!matchMap(deviceMap, "mac", simulatorMap, "propertySettings.macAddress")) {
-            return false;
-        }
-
 
         //分辨率
         if (!matchResolution(device.getResolution(), simulatorMap.get("advancedSettings.resolution"), simulatorMap.get("basicSettings.width"), simulatorMap.get("basicSettings.height"))) {

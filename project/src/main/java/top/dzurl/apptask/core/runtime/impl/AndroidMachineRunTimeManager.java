@@ -14,15 +14,19 @@ import top.dzurl.apptask.core.appium.AppiumServer;
 import top.dzurl.apptask.core.conf.AppTaskConf;
 import top.dzurl.apptask.core.model.AndroidDeviceInfo;
 import top.dzurl.apptask.core.model.ScriptRuntime;
+import top.dzurl.apptask.core.model.runtime.AndroidMachineScriptRuntime;
 import top.dzurl.apptask.core.runtime.RunTimeEnvironmentManager;
 import top.dzurl.apptask.core.runtime.model.AndroidMachineDevice;
 import top.dzurl.apptask.core.util.ADBUtil;
+import top.dzurl.apptask.core.util.BeanUtil;
 import top.dzurl.apptask.core.util.LeiDianSimulatorUtil;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -34,6 +38,9 @@ public class AndroidMachineRunTimeManager implements RunTimeEnvironmentManager {
 
     //正在运行的虚拟机
     private Vector<RunningMachine> runningSimulators = new Vector<>();
+
+    //设备mac的缓存
+    private Map<String, String> deviceMacCache = new ConcurrentHashMap<>();
 
     @Autowired
     private AppTaskConf appTaskConf;
@@ -50,16 +57,31 @@ public class AndroidMachineRunTimeManager implements RunTimeEnvironmentManager {
 
     @Override
     public synchronized void open(ScriptRuntime runtime) {
+        final AndroidMachineScriptRuntime scriptRuntime = (AndroidMachineScriptRuntime) runtime;
+
         RunningMachine runningMachine = findMachine(runtime);
         if (runningMachine == null) {
             throw new RuntimeException("没有可用的android设备");
         }
+
+        //赋值驱动
+        scriptRuntime.setDriver(runningMachine.getDriver());
+        scriptRuntime.setDeviceName(runningMachine.getDeviceName());
+
+
     }
 
     @Override
     public void close(ScriptRuntime runtime) {
-
-
+        final AndroidMachineScriptRuntime scriptRuntime = (AndroidMachineScriptRuntime) runtime;
+        //关闭android真机为完成
+        this.runningSimulators.stream().filter((it) -> {
+            return it.getDeviceName().equals(scriptRuntime.getDeviceName());
+        }).forEach((it) -> {
+            it.setWorking(false);
+        });
+        scriptRuntime.setDriver(null);
+        scriptRuntime.setDeviceName(null);
     }
 
 
@@ -83,7 +105,7 @@ public class AndroidMachineRunTimeManager implements RunTimeEnvironmentManager {
         devices.removeAll(runningSimulators.stream().filter((it) -> {
             return it.working;
         }).map((it) -> {
-            return it.adbConnectionName;
+            return it.getDeviceName();
         }).collect(Collectors.toSet()));
         log.debug("过滤运行的设备 : {}", devices);
 
@@ -97,7 +119,7 @@ public class AndroidMachineRunTimeManager implements RunTimeEnvironmentManager {
         }).collect(Collectors.toSet());
         //过滤模拟器
         devices.removeAll(devices.stream().filter((it) -> {
-            String mac = ADBUtil.getMac(ADBHome, it);
+            String mac = this.getMac(it);
             if (mac == null) {
                 return true;
             }
@@ -113,15 +135,31 @@ public class AndroidMachineRunTimeManager implements RunTimeEnvironmentManager {
         for (String device : devices) {
             AndroidDeviceInfo androidDeviceInfo = ADBUtil.getInfo(ADBHome, device);
             if (matchDevice(androidDeviceInfo, machineDevice)) {
-                runningMachine = buildRunningMachine(runtime);
+                runningMachine = buildRunningMachine(device, androidDeviceInfo);
                 runningMachine.setWorking(true);
                 this.runningSimulators.add(runningMachine);
                 return runningMachine;
             }
         }
 
-
         return null;
+    }
+
+
+    /**
+     * 取出mac地址，优先读缓存
+     *
+     * @param deviceName
+     * @return
+     */
+    private String getMac(String deviceName) {
+        String mac = this.deviceMacCache.get(deviceName);
+        if (StringUtils.hasText(mac)) {
+            return mac;
+        }
+        mac = ADBUtil.getMac(ADBHome, deviceName);
+        this.deviceMacCache.put(deviceName, mac);
+        return mac;
     }
 
 
@@ -130,9 +168,16 @@ public class AndroidMachineRunTimeManager implements RunTimeEnvironmentManager {
      *
      * @return
      */
-    private RunningMachine buildRunningMachine(ScriptRuntime runtime) {
-        //todo 实例化运行设备，连接appium驱动等
-        return null;
+    private RunningMachine buildRunningMachine(String deviceName, AndroidDeviceInfo androidDeviceInfo) {
+        RunningMachine runningMachine = new RunningMachine();
+
+        //构建appium服务端
+        runningMachine.setAppiumDriverLocalService(this.appiumServer.buildService());
+        runningMachine.setDriver(this.appiumServer.buildAndroidDriver(runningMachine.getAppiumDriverLocalService(), deviceName));
+        runningMachine.setDeviceName(deviceName);
+        runningMachine.setAndroidDeviceInfo(androidDeviceInfo);
+
+        return runningMachine;
     }
 
     /**
@@ -143,8 +188,36 @@ public class AndroidMachineRunTimeManager implements RunTimeEnvironmentManager {
      * @return
      */
     private boolean matchDevice(AndroidDeviceInfo androidDeviceInfo, AndroidMachineDevice machineDevice) {
-        //todo 设备信息比较
-        return false;
+        Map<String, Object> info = BeanUtil.toMap(androidDeviceInfo);
+        Map<String, Object> device = BeanUtil.toMap(machineDevice);
+
+        String[] matchWords = new String[]{
+                "version", "sdk", "productModel", "productBrand", "serialno", "mac"
+        };
+
+        for (String matchWord : matchWords) {
+            if (!matchDeviceMap(info, device, matchWord)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 比较信息的某一项
+     *
+     * @param info
+     * @param device
+     * @param item
+     * @return
+     */
+    private boolean matchDeviceMap(Map<String, Object> info, Map<String, Object> device, String item) {
+        Object infoVal = info.get(item);
+        Object deviceVal = device.get(item);
+        if (infoVal == null || deviceVal == null) {
+            return true;
+        }
+        return infoVal.equals(deviceVal);
     }
 
 
@@ -175,8 +248,8 @@ public class AndroidMachineRunTimeManager implements RunTimeEnvironmentManager {
     @NoArgsConstructor
     private static class RunningMachine {
 
-        //取出adb的androidid
-        private String adbConnectionName;
+        //设备名
+        private String deviceName;
 
         //模拟器对应的本地服务
         private AppiumDriverLocalService appiumDriverLocalService;
