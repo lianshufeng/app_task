@@ -5,7 +5,6 @@ import top.dzurl.apptask.core.model.Environment
 import top.dzurl.apptask.core.runtime.model.AndroidMachineDevice
 import top.dzurl.apptask.core.script.ScriptEvent
 import top.dzurl.apptask.core.script.SuperScript
-import top.dzurl.apptask.core.util.JsonUtil
 
 class DingDingDaKa extends SuperScript {
 
@@ -47,7 +46,10 @@ class DingDingDaKa extends SuperScript {
     Object run() {
 
         AndroidDriver driver = runtime.getDriver();
-        println JsonUtil.toJson(driver.getBatteryInfo(), true)
+
+
+
+        async.await(20000)
 
         return [
                 'text'       : 'ok123',
