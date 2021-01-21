@@ -59,9 +59,11 @@ public class ADBUtil {
         String[] lines = runAdb(home, "-s", deviceName, "shell", "getprop").split("\r\n");
         Arrays.stream(lines).forEach((line) -> {
             int at = line.indexOf(":");
-            String key = line.substring(0, at).trim();
-            String value = line.substring(at + 1, line.length()).trim();
-            ret.put(formatInfoChar(key, "\\[", "\\]"), formatInfoChar(value, "\\[", "\\]"));
+            if (at > -1) {
+                String key = line.substring(0, at).trim();
+                String value = line.substring(at + 1, line.length()).trim();
+                ret.put(formatInfoChar(key, "\\[", "\\]"), formatInfoChar(value, "\\[", "\\]"));
+            }
         });
 
 
