@@ -9,6 +9,8 @@ import top.dzurl.apptask.core.model.ScriptRuntime;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 脚本的父类
@@ -31,6 +33,24 @@ public abstract class SuperScript extends Script {
     //通用方法
     @Getter
     protected ScriptMethod method;
+
+    //取出UI方法
+    @Getter
+    private Map<String, UserInterface> ui = new ConcurrentHashMap<>();
+
+    //创建脚本的时间
+    @Getter
+    private long createTime = System.currentTimeMillis();
+
+
+    /**
+     * 添加用户交互
+     */
+    protected String addUI(UserInterface userInterface) {
+        String uuid = UUID.randomUUID().toString();
+        ui.put(uuid, userInterface);
+        return uuid;
+    }
 
 
     /**
@@ -77,7 +97,7 @@ public abstract class SuperScript extends Script {
      * @return
      */
     public String remark() {
-        return this.name();
+        return String.format("[%s] 脚本", this.name());
     }
 
 

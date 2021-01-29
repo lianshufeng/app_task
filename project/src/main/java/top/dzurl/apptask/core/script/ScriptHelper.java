@@ -2,6 +2,7 @@ package top.dzurl.apptask.core.script;
 
 import groovy.lang.GroovyShell;
 import groovy.lang.Script;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
@@ -33,6 +34,10 @@ public class ScriptHelper {
 
     //脚本对象缓存
     private Map<String, String> scriptNameCache = new ConcurrentHashMap<>();
+
+    //当前正在运行的脚本
+    @Getter
+    private Map<String, SuperScript> currentRunScript = new ConcurrentHashMap<>();
 
 
     //脚本存放的文件夹
@@ -157,7 +162,6 @@ public class ScriptHelper {
         if (!(script instanceof SuperScript)) {
             return;
         }
-
         SuperScript superScript = (SuperScript) script;
         //设置当前脚本的路径
         superScript.scriptFile = file;
@@ -213,8 +217,33 @@ public class ScriptHelper {
         if (o == null || !(o instanceof SuperScript)) {
             throw new RuntimeException(String.format("脚本 [%s] 不存在", scriptName));
         }
+
+        //脚本执行的uuid
+        final String uuid = UUID.randomUUID().toString();
+
         //实例化脚本对象
         SuperScript script = (SuperScript) new GroovyShell().parse(((SuperScript) o).getScriptFile());
+
+        //当前正在运行的脚本
+        this.currentRunScript.put(uuid, script);
+
+        Object ret = null;
+        try {
+            ret = runScript(script, environment, parameters);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        //移除正在执行的脚本
+        this.currentRunScript.remove(uuid);
+
+        return ret;
+    }
+
+
+    @SneakyThrows
+    private Object runScript(SuperScript script, final Environment environment, final Map<String, Object> parameters) {
+
         //注入spring的对象
         this.springBeanHelper.injection(script);
 
@@ -236,7 +265,6 @@ public class ScriptHelper {
             log.error(e.getMessage());
             publishEvent(script, ScriptEvent.EventType.Exception);
         }
-
 
         //关闭运行环境
         this.closeRunTimeEnvironment(script);

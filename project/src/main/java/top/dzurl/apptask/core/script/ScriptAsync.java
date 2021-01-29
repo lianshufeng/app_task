@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.util.Assert;
+import top.dzurl.apptask.core.helper.SpringBeanHelper;
 import top.dzurl.apptask.core.helper.Where;
 
 import java.util.concurrent.CountDownLatch;
@@ -26,6 +28,9 @@ public class ScriptAsync {
     //阻塞线程
     private CountDownLatch countDownLatch;
 
+    @Autowired
+    private SpringBeanHelper springBeanHelper;
+
 
     /**
      * 初始化
@@ -36,6 +41,21 @@ public class ScriptAsync {
     private void init(ApplicationContext applicationContext) {
         threadPool = script.getRuntime().getThreadPool();
         countDownLatch = new CountDownLatch(1);
+    }
+
+    /**
+     * 交互
+     *
+     * @return
+     */
+    public UserInterface ui(final UserInterface.Interact interact) {
+        Assert.notNull(interact.getType(), "交互类型不能为空");
+        UserInterface userInterfaceHelper = UserInterface.build();
+        userInterfaceHelper.interact = interact;
+        userInterfaceHelper.script = this.script;
+        springBeanHelper.injection(userInterfaceHelper);
+        this.script.addUI(userInterfaceHelper);
+        return userInterfaceHelper;
     }
 
 

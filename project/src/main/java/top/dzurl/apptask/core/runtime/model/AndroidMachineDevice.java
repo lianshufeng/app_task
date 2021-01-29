@@ -28,7 +28,6 @@ public class AndroidMachineDevice extends Device {
     private String mac;
 
 
-
     @Override
     public DeviceType getType() {
         return DeviceType.AndroidMachine;
