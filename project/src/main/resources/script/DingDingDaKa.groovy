@@ -53,8 +53,8 @@ class DingDingDaKa extends SuperScript {
     Map<String, Parameter> parameters() {
         return [
                 'phone'   : new Parameter(value: '13368172379', remark: '电话'),
-                'password': new Parameter(value: 'zhangyajun', remark: '密码'),
-                'company' : new Parameter(value: '重庆艾艺荷马', remark: '公司名称')
+                'password': new Parameter(value: 'xxx', remark: '密码'),
+                'company' : new Parameter(value: 'xxx', remark: '公司名称')
         ]
     }
 
